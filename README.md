@@ -1,6 +1,12 @@
 # Product Image Toolkit
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Demo](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://iindrajeet4.github.io/product-image-toolkit/)
+[![Dependencies](https://img.shields.io/badge/dependencies-none-blue.svg)](#)
+
 A **100% client-side** batch tool for e-commerce product images — rename, resize, watermark, compress, and strip EXIF metadata, all in the browser. **No files are ever uploaded**; everything runs locally via the Canvas API in a single dependency-free `index.html`.
+
+**[🔗 Live Demo / ลองใช้เลย](https://iindrajeet4.github.io/product-image-toolkit/)**
 
 > Built from real workflow pain at a jewelry retailer processing hundreds of product shots per campaign. Inspired by the ideas behind [Squoosh](https://github.com/GoogleChromeLabs/squoosh) (Google, Apache-2.0) and [Caesium](https://github.com/Lymphatus/caesium-image-compressor) (GPL-3.0) — no code copied from either; this is an independent implementation focused on *batch e-commerce workflows*.
 
