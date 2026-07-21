@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Image Toolkit — batch rename, resize, watermark, compress</title>
+<style>
+:root{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --border:#2a2f3a;
+  --text:#e6e9ef; --muted:#8b93a3; --accent:#4f8cff; --accent2:#7c5cff;
+  --ok:#3ecf8e; --warn:#f5a623; --err:#ff5c72; --radius:10px;
+}
+:root[data-theme="light"]{
+  --bg:#f4f6fa; --panel:#ffffff; --panel2:#eef1f6; --border:#d8dee8;
+  --text:#1c2230; --muted:#5d6575;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:14px/1.5 "Segoe UI",system-ui,sans-serif;min-height:100vh}
+header{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--border);background:var(--panel);position:sticky;top:0;z-index:10}
+header h1{font-size:17px;font-weight:600;letter-spacing:.3px}
+header .logo{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-weight:700;color:#fff}
+header .tag{font-size:11px;color:var(--muted);border:1px solid var(--border);border-radius:20px;padding:2px 10px}
+header .spacer{flex:1}
+button{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:7px 14px;cursor:pointer;transition:.15s}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+button.primary:hover{filter:brightness(1.1)}
+button:disabled{opacity:.45;cursor:not-allowed}
+main{display:grid;grid-template-columns:320px 1fr;gap:18px;padding:18px 22px;max-width:1600px;margin:0 auto}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.panel h2{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:12px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+input[type=text],input[type=number],select{width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:7px 10px;font:inherit}
+input:focus,select:focus{outline:none;border-color:var(--accent)}
+input[type=range]{width:100%}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.chk{display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:6px;cursor:pointer}
+.hint{font-size:11px;color:var(--muted);margin-top:3px}
+#drop{border:2px dashed var(--border);border-radius:var(--radius);padding:44px 20px;text-align:center;color:var(--muted);cursor:pointer;transition:.2s;margin-bottom:16px}
+#drop.over,#drop:hover{border-color:var(--accent);color:var(--text);background:rgba(79,140,255,.06)}
+#drop b{color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;text-align:left;padding:8px;border-bottom:1px solid var(--border)}
+td{padding:8px;border-bottom:1px solid var(--border);vertical-align:middle}
+td img{width:44px;height:44px;object-fit:cover;border-radius:6px;background:var(--panel2)}
+td input[type=text]{min-width:200px}
+.size-badge{display:inline-block;font-size:11px;color:var(--muted);background:var(--panel2);border-radius:5px;padding:1px 7px;margin-right:4px}
+.del{color:var(--err);background:none;border:none;font-size:16px;padding:2px 6px}
+.footer-bar{display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap}
+.stat{font-size:12px;color:var(--muted)}
+#progress{height:5px;background:var(--panel2);border-radius:3px;overflow:hidden;flex:1;min-width:120px;display:none}
+#progress .bar{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .2s}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--panel);border:1px solid var(--ok);border-radius:8px;padding:10px 16px;font-size:13px;display:none;z-index:99}
+.empty{color:var(--muted);text-align:center;padding:36px 0;font-size:13px}
+.preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px}
+td img{cursor:zoom-in}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+#modal.open{display:flex}
+#modal .box{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px;max-width:960px;width:100%;max-height:92vh;overflow:auto}
+#modal .cmp{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
+@media(max-width:700px){#modal .cmp{grid-template-columns:1fr}}
+#modal figure{margin:0}
+#modal figcaption{font-size:12px;color:var(--muted);margin-bottom:6px}
+#modal img{max-width:100%;border-radius:8px;background:var(--panel2);border:1px solid var(--border)}
+#modal .head{display:flex;align-items:center;gap:10px}
+#modal .head .spacer{flex:1}
+.busy{pointer-events:none;opacity:.7}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">PI</div>
+  <h1>Product Image Toolkit</h1>
+  <span class="tag">100% client-side · nothing is uploaded</span>
+  <div class="spacer"></div>
+  <button id="btnTheme" title="Toggle theme">🌓</button>
+  <button id="btnExportCfg">Export config</button>
+  <button id="btnImportCfg">Import config</button>
+  <input type="file" id="cfgFile" accept=".json" hidden>
+</header>
+
+<main>
+  <aside>
+    <div class="panel" style="margin-bottom:16px">
+      <h2>Rename</h2>
+      <div class="field">
+        <label>Filename template</label>
+        <input type="text" id="template" value="{date}_{name}_{seq}_{size}">
+        <div class="hint">Tokens: {name} {seq} {date} {size} {w} {h} {sku}</div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Date (DDMMYY)</label><input type="text" id="dateToken"></div>
+        <div class="field"><label>Seq start</label><input type="number" id="seqStart" value="1" min="0"></div>
+      </div>
+      <div class="field">
+        <label>SKU extraction (regex on original name)</label>
+        <input type="text" id="skuRegex" value="^([A-Za-z]+\d+)">
+        <div class="hint">Default grabs a leading letter+number code, e.g. SB044</div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-bottom:16px">
+      <h2>Output sizes</h2>
+      <div class="preset-grid" id="sizePresets"></div>
+      <div class="row" style="margin-top:8px">
+        <div class="field"><label>Custom W</label><input type="number" id="cw" placeholder="e.g. 1200"></div>
+        <div class="field"><label>Custom H</label><input type="number" id="ch" placeholder="e.g. 1200"></div>
+      </div>
+      <div class="field">
+        <label>Fit mode</label>
+        <select id="fit">
+          <option value="cover">Cover (crop to fill)</option>
+          <option value="contain">Contain (pad, keep all)</option>
+          <option value="scale">Longest side (keep ratio)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Pad colour (contain)</label>
+        <input type="text" id="padColor" value="#ffffff">
+      </div>
+    </div>
+
+    <div class="panel" style="margin-bottom:16px">
+      <h2>Format &amp; compression</h2>
+      <div class="field">
+        <label>Output format</label>
+        <select id="format">
+          <option value="image/jpeg">JPG</option>
+          <option value="image/webp">WebP</option>
+          <option value="image/png">PNG (lossless)</option>
+        </select>
+        <div class="hint">Re-encoding via canvas strips all EXIF/GPS metadata automatically.</div>
+      </div>
+      <div class="field">
+        <label>Quality: <span id="qVal">82</span></label>
+        <input type="range" id="quality" min="30" max="100" value="82">
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Watermark</h2>
+      <label class="chk"><input type="checkbox" id="wmOn"> Enable watermark</label>
+      <div class="field"><label>Text</label><input type="text" id="wmText" value="© Your Brand"></div>
+      <div class="field"><label>Or logo image</label><input type="file" id="wmImg" accept="image/*"></div>
+      <div class="row">
+        <div class="field"><label>Position</label>
+          <select id="wmPos">
+            <option value="br">Bottom right</option><option value="bl">Bottom left</option>
+            <option value="tr">Top right</option><option value="tl">Top left</option>
+            <option value="c">Center</option>
+          </select>
+        </div>
+        <div class="field"><label>Opacity: <span id="wmOpVal">40</span>%</label><input type="range" id="wmOp" min="5" max="100" value="40"></div>
+      </div>
+    </div>
+  </aside>
+
+  <section>
+    <div id="drop">Drop product images here, or <b>click to browse</b><br><span style="font-size:12px">JPG · PNG · WebP — processed locally in your browser</span></div>
+    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" multiple hidden>
+
+    <div class="panel">
+      <h2>Queue</h2>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th></th><th>Original</th><th>New name (editable)</th><th>Outputs</th><th>Size</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      </div>
+      <div class="empty" id="empty">No images yet — drop some above to begin.</div>
+      <div class="footer-bar">
+        <span class="stat" id="stats"></span>
+        <div id="progress"><div class="bar"></div></div>
+        <div class="spacer" style="flex:1"></div>
+        <button id="btnEstimate">Estimate savings</button>
+        <button id="btnClear">Clear</button>
+        <button class="primary" id="btnZip" disabled>⬇ Process &amp; download ZIP</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<div id="modal">
+  <div class="box">
+    <div class="head">
+      <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Preview — before / after</h2>
+      <div class="spacer"></div>
+      <button id="pvClose">✕ Close</button>
+    </div>
+    <div class="cmp">
+      <figure><figcaption id="pvOrigCap">Original</figcaption><img id="pvOrig" alt="Original image"></figure>
+      <figure><figcaption id="pvProcCap">Processed</figcaption><img id="pvProc" alt="Processed image"></figure>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const files = [];   // {file, url, img, custom}
+let wmImage = null, wmImageURL = null;
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---------- minimal ZIP writer (STORE method, no dependencies) ---------- */
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c;
+  }
+  return t;
+})();
+function crc32(u8) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+class MiniZip {
+  constructor() { this.entries = []; }
+  async file(name, blob) {
+    this.entries.push({ name: new TextEncoder().encode(name), data: new Uint8Array(await blob.arrayBuffer()) });
+  }
+  generateBlob() {
+    const d = new Date();
+    const time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+    const date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+    const parts = [], central = [];
+    let offset = 0;
+    for (const e of this.entries) {
+      const crc = crc32(e.data), n = e.name.length, sz = e.data.length;
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true);
+      lh.setUint16(10, time, true); lh.setUint16(12, date, true); lh.setUint32(14, crc, true);
+      lh.setUint32(18, sz, true); lh.setUint32(22, sz, true); lh.setUint16(26, n, true);
+      parts.push(lh.buffer, e.name, e.data);
+      const ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true);
+      ch.setUint16(8, 0x0800, true); ch.setUint16(12, time, true); ch.setUint16(14, date, true);
+      ch.setUint32(16, crc, true); ch.setUint32(20, sz, true); ch.setUint32(24, sz, true);
+      ch.setUint16(28, n, true); ch.setUint32(42, offset, true);
+      central.push(ch.buffer, e.name);
+      offset += 30 + n + sz;
+    }
+    let cdSize = 0;
+    central.forEach(b => cdSize += b.byteLength);
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true);
+    end.setUint16(8, this.entries.length, true); end.setUint16(10, this.entries.length, true);
+    end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+    return new Blob([...parts, ...central, end.buffer], { type: "application/zip" });
+  }
+}
+
+/* ---------- theme ---------- */
+const root = document.documentElement;
+root.dataset.theme = localStorage.getItem("pit-theme") || "dark";
+$("#btnTheme").onclick = () => {
+  root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark";
+  localStorage.setItem("pit-theme", root.dataset.theme);
+};
+
+/* ---------- size presets ---------- */
+const PRESETS = [[1000,1000],[600,600],[300,300],[150,150],[1920,1080],[1080,1080]];
+PRESETS.forEach(([w,h],i)=>{
+  const l=document.createElement("label"); l.className="chk";
+  l.innerHTML=`<input type="checkbox" data-w="${w}" data-h="${h}" ${i===0?"checked":""}> ${w}×${h}`;
+  $("#sizePresets").appendChild(l);
+});
+
+/* ---------- config persistence ---------- */
+const CFG_KEYS = ["template","dateToken","seqStart","skuRegex","fit","padColor","format","quality","wmText","wmPos","wmOp","cw","ch"];
+function saveCfg(){
+  const cfg = {};
+  CFG_KEYS.forEach(k=>cfg[k]=$("#"+k).value);
+  cfg.wmOn = $("#wmOn").checked;
+  cfg.sizes = [...document.querySelectorAll("#sizePresets input:checked")].map(c=>[+c.dataset.w,+c.dataset.h]);
+  localStorage.setItem("pit-cfg", JSON.stringify(cfg));
+  return cfg;
+}
+function loadCfg(cfg){
+  if(!cfg) return;
+  CFG_KEYS.forEach(k=>{ if(cfg[k]!==undefined) $("#"+k).value=cfg[k]; });
+  $("#wmOn").checked = !!cfg.wmOn;
+  if(cfg.sizes) document.querySelectorAll("#sizePresets input").forEach(c=>{
+    c.checked = cfg.sizes.some(([w,h])=>w==+c.dataset.w&&h==+c.dataset.h);
+  });
+  $("#qVal").textContent=$("#quality").value;
+  $("#wmOpVal").textContent=$("#wmOp").value;
+}
+try{ loadCfg(JSON.parse(localStorage.getItem("pit-cfg"))); }catch(e){}
+document.querySelectorAll("input,select").forEach(el=>el.addEventListener("change",()=>{saveCfg();renderRows();}));
+$("#quality").oninput=e=>$("#qVal").textContent=e.target.value;
+$("#wmOp").oninput=e=>$("#wmOpVal").textContent=e.target.value;
+
+if(!$("#dateToken").value){
+  const d=new Date();
+  $("#dateToken").value=String(d.getDate()).padStart(2,"0")+String(d.getMonth()+1).padStart(2,"0")+String(d.getFullYear()).slice(2);
+}
+
+$("#btnExportCfg").onclick=()=>{
+  const blob=new Blob([JSON.stringify(saveCfg(),null,2)],{type:"application/json"});
+  dl(blob,"image-toolkit-config.json"); toast("Config exported");
+};
+$("#btnImportCfg").onclick=()=>$("#cfgFile").click();
+$("#cfgFile").onchange=async e=>{
+  const f=e.target.files[0]; if(!f)return;
+  try{ loadCfg(JSON.parse(await f.text())); saveCfg(); renderRows(); toast("Config imported"); }
+  catch(err){ toast("Invalid config file", true); }
+};
+
+/* ---------- file intake ---------- */
+$("#drop").onclick=()=>$("#fileInput").click();
+$("#fileInput").onchange=e=>addFiles(e.target.files);
+["dragover","dragleave","drop"].forEach(ev=>$("#drop").addEventListener(ev,e=>{
+  e.preventDefault();
+  $("#drop").classList.toggle("over",ev==="dragover");
+  if(ev==="drop") addFiles(e.dataTransfer.files);
+}));
+
+const OK_TYPES=["image/jpeg","image/png","image/webp"];
+function loadImage(url){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>res(img);
+    img.onerror=()=>rej(new Error("decode failed"));
+    img.src=url;
+  });
+}
+async function addFiles(list){
+  let added=0, skipped=0, failed=0;
+  for(const f of list){
+    if(!OK_TYPES.includes(f.type)){ skipped++; continue; }
+    const url=URL.createObjectURL(f);
+    try{
+      const img=await loadImage(url);
+      files.push({file:f,url,img,custom:null});
+      added++;
+    }catch(e){
+      URL.revokeObjectURL(url); // don't leak URLs of broken files
+      failed++;
+    }
+  }
+  renderRows();
+  if(skipped) toast(`${skipped} file(s) skipped — only JPG, PNG and WebP are supported`, true);
+  if(failed) toast(`${failed} file(s) could not be decoded (corrupt or unsupported image)`, true);
+  $("#fileInput").value=""; // allow re-adding the same file
+}
+
+$("#wmImg").onchange=async e=>{
+  const f=e.target.files[0];
+  if(wmImageURL){ URL.revokeObjectURL(wmImageURL); wmImageURL=null; }
+  wmImage=null;
+  if(!f) return;
+  if(!f.type.startsWith("image/")){ toast("Watermark logo must be an image file", true); e.target.value=""; return; }
+  wmImageURL=URL.createObjectURL(f);
+  try{
+    wmImage=await loadImage(wmImageURL);
+    toast("Watermark logo loaded");
+  }catch(err){
+    URL.revokeObjectURL(wmImageURL); wmImageURL=null; wmImage=null; e.target.value="";
+    toast("Could not read watermark image", true);
+  }
+};
+
+/* ---------- naming ---------- */
+function baseName(fn){ return fn.replace(/\.[^.]+$/,""); }
+function sanitize(s){ return s.replace(/[\\/:*?"<>|\s]+/g,"_").replace(/_+/g,"_").replace(/^_|_$/g,""); }
+function buildName(f,i,w,h){
+  if(f.custom) return sanitize(f.custom)+`_${w}x${h}`;
+  const orig=baseName(f.file.name);
+  let sku="";
+  try{ const m=orig.match(new RegExp($("#skuRegex").value)); sku=m?m[1]:""; }catch(e){}
+  const seq=String(+$("#seqStart").value+i).padStart(3,"0");
+  return sanitize($("#template").value
+    .replaceAll("{name}",orig).replaceAll("{seq}",seq)
+    .replaceAll("{date}",$("#dateToken").value)
+    .replaceAll("{size}",`${w}x${h}`)
+    .replaceAll("{w}",w).replaceAll("{h}",h)
+    .replaceAll("{sku}",sku||orig));
+}
+function ext(){ return {"image/jpeg":".jpg","image/webp":".webp","image/png":".png"}[$("#format").value]; }
+function selectedSizes(){
+  const s=[...document.querySelectorAll("#sizePresets input:checked")].map(c=>[+c.dataset.w,+c.dataset.h]);
+  const cw=Math.floor(+$("#cw").value), ch=Math.floor(+$("#ch").value);
+  if(cw>0||ch>0) s.push([cw>0?cw:ch, ch>0?ch:cw]); // one value given → square
+  return s.length?s:[[1000,1000]];
+}
+
+/* ---------- table ---------- */
+function renderRows(){
+  const tb=$("#rows"); tb.innerHTML="";
+  const sizes=selectedSizes();
+  files.forEach((f,i)=>{
+    const tr=document.createElement("tr");
+    const badges=sizes.map(([w,h])=>`<span class="size-badge">${w}×${h}</span>`).join("");
+    tr.innerHTML=`<td><img src="${f.url}" class="thumb" data-i="${i}" title="Click to preview before/after"></td>
+      <td style="color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis">${esc(f.file.name)}<div class="hint">${f.img.naturalWidth}×${f.img.naturalHeight}</div></td>
+      <td><input type="text" value="${esc(buildName(f,i,sizes[0][0],sizes[0][1]).replace(/_\d+x\d+$/,""))}" data-i="${i}" class="nameEdit"></td>
+      <td>${badges}</td>
+      <td class="stat">${(f.file.size/1024).toFixed(0)} KB<span class="est" data-i="${i}"></span></td>
+      <td><button class="del" data-i="${i}" title="Remove">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll(".del").forEach(b=>b.onclick=()=>{const i=+b.dataset.i;URL.revokeObjectURL(files[i].url);files.splice(i,1);renderRows();});
+  tb.querySelectorAll(".nameEdit").forEach(inp=>inp.onchange=()=>{files[+inp.dataset.i].custom=inp.value;});
+  tb.querySelectorAll(".thumb").forEach(im=>im.onclick=()=>openPreview(+im.dataset.i));
+  $("#empty").style.display=files.length?"none":"block";
+  $("#btnZip").disabled=!files.length;
+  $("#stats").textContent=files.length?`${files.length} image(s) × ${sizes.length} size(s) = ${files.length*sizes.length} output file(s)`:"";
+}
+
+/* ---------- processing ---------- */
+function drawOne(f,w,h){
+  const c=document.createElement("canvas"); c.width=w; c.height=h;
+  const x=c.getContext("2d");
+  const iw=f.img.naturalWidth, ih=f.img.naturalHeight;
+  const fit=$("#fit").value;
+  if(fit==="scale"){
+    const r=Math.min(w/iw,h/ih,1); c.width=Math.round(iw*r); c.height=Math.round(ih*r);
+    x.drawImage(f.img,0,0,c.width,c.height);
+  }else if(fit==="contain"){
+    x.fillStyle=$("#padColor").value||"#fff"; x.fillRect(0,0,w,h);
+    const r=Math.min(w/iw,h/ih);
+    const dw=iw*r, dh=ih*r;
+    x.drawImage(f.img,(w-dw)/2,(h-dh)/2,dw,dh);
+  }else{ // cover
+    const r=Math.max(w/iw,h/ih);
+    const dw=iw*r, dh=ih*r;
+    x.drawImage(f.img,(w-dw)/2,(h-dh)/2,dw,dh);
+  }
+  if($("#wmOn").checked) drawWatermark(x,c.width,c.height);
+  return c;
+}
+function drawWatermark(x,w,h){
+  x.save(); x.globalAlpha=+$("#wmOp").value/100;
+  const pos=$("#wmPos").value, m=Math.round(w*0.03);
+  if(wmImage){
+    const ww=Math.round(w*0.22), wh=Math.round(ww*wmImage.naturalHeight/wmImage.naturalWidth);
+    const [px,py]=posXY(pos,w,h,ww,wh,m);
+    x.drawImage(wmImage,px,py,ww,wh);
+  }else{
+    const fs=Math.max(14,Math.round(w*0.032));
+    x.font=`600 ${fs}px "Segoe UI",sans-serif`;
+    const t=$("#wmText").value||"©";
+    const tw=x.measureText(t).width;
+    const [px,py]=posXY(pos,w,h,tw,fs,m);
+    x.fillStyle="#000"; x.fillText(t,px+1,py+fs+1);
+    x.fillStyle="#fff"; x.fillText(t,px,py+fs);
+  }
+  x.restore();
+}
+function posXY(pos,w,h,ew,eh,m){
+  switch(pos){
+    case "tl": return [m,m];
+    case "tr": return [w-ew-m,m];
+    case "bl": return [m,h-eh-m];
+    case "c":  return [(w-ew)/2,(h-eh)/2];
+    default:   return [w-ew-m,h-eh-m];
+  }
+}
+async function toBlob(canvas){
+  const fmt=$("#format").value;
+  let b=await new Promise(r=>canvas.toBlob(r,fmt,+$("#quality").value/100));
+  if(!b && fmt!=="image/png"){ // browser can't encode this format → lossless fallback
+    b=await new Promise(r=>canvas.toBlob(r,"image/png"));
+    if(b) toast("Browser cannot encode "+fmt.split("/")[1].toUpperCase()+" — fell back to PNG", true);
+  }
+  if(!b) throw new Error("encoding failed");
+  return b;
+}
+
+/* ---------- before/after preview ---------- */
+let pvURL=null;
+async function openPreview(i){
+  const f=files[i], [w,h]=selectedSizes()[0];
+  try{
+    const b=await toBlob(drawOne(f,w,h));
+    if(pvURL) URL.revokeObjectURL(pvURL);
+    pvURL=URL.createObjectURL(b);
+    $("#pvOrig").src=f.url;
+    $("#pvProc").src=pvURL;
+    $("#pvOrigCap").textContent=`Original — ${f.img.naturalWidth}×${f.img.naturalHeight} · ${(f.file.size/1024).toFixed(0)} KB`;
+    $("#pvProcCap").textContent=`Processed — ${w}×${h} · ${(b.size/1024).toFixed(0)} KB (first selected size)`;
+    $("#modal").classList.add("open");
+  }catch(e){ toast("Preview failed: "+e.message, true); }
+}
+function closePreview(){
+  $("#modal").classList.remove("open");
+  if(pvURL){ URL.revokeObjectURL(pvURL); pvURL=null; }
+  $("#pvProc").removeAttribute("src");
+}
+$("#pvClose").onclick=closePreview;
+$("#modal").onclick=e=>{ if(e.target.id==="modal") closePreview(); };
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closePreview(); });
+
+$("#btnEstimate").onclick=async()=>{
+  if(!files.length) return;
+  const btn=$("#btnEstimate"); btn.disabled=true;
+  try{
+    const sizes=selectedSizes(); let before=0, after=0;
+    for(let i=0;i<files.length;i++){
+      const f=files[i]; before+=f.file.size;
+      const b=await toBlob(drawOne(f,sizes[0][0],sizes[0][1]));
+      after+=b.size;
+      const el=document.querySelector(`.est[data-i="${i}"]`);
+      if(el) el.textContent=` → ${(b.size/1024).toFixed(0)} KB`;
+    }
+    const pct=before?Math.round((1-after/before)*100):0;
+    toast(`First-size estimate: ${(before/1048576).toFixed(1)} MB → ${(after/1048576).toFixed(1)} MB (${pct>=0?pct+"% smaller":"larger"})`);
+  }catch(e){ toast("Estimate failed: "+e.message, true); }
+  finally{ btn.disabled=false; }
+};
+
+$("#btnZip").onclick=async()=>{
+  const btn=$("#btnZip"), zip=new MiniZip(), sizes=selectedSizes();
+  const total=files.length*sizes.length; let done=0;
+  const prog=$("#progress"), bar=prog.querySelector(".bar");
+  const label=btn.innerHTML;
+  prog.style.display="block"; btn.disabled=true; btn.classList.add("busy"); btn.textContent="Processing…";
+  try{
+    const used=new Set();
+    for(let i=0;i<files.length;i++){
+      for(const [w,h] of sizes){
+        let name=buildName(files[i],i,w,h)+ext();
+        let n=2; while(used.has(name)){ name=buildName(files[i],i,w,h)+`_${n++}`+ext(); }
+        used.add(name);
+        await zip.file(name, await toBlob(drawOne(files[i],w,h)));
+        done++;
+        bar.style.width=(done/total*100)+"%";
+        btn.textContent=`Processing… ${done}/${total}`;
+        await new Promise(r=>setTimeout(r)); // let UI breathe
+      }
+    }
+    dl(zip.generateBlob(),"images_"+($("#dateToken").value||"export")+".zip");
+    toast(`Done — ${total} file(s) zipped. All EXIF metadata stripped.`);
+  }catch(e){
+    toast("Processing failed: "+e.message, true);
+  }finally{
+    prog.style.display="none"; bar.style.width="0";
+    btn.disabled=false; btn.classList.remove("busy"); btn.innerHTML=label;
+  }
+};
+
+$("#btnClear").onclick=()=>{files.forEach(f=>URL.revokeObjectURL(f.url));files.length=0;renderRows();};
+
+/* ---------- utils ---------- */
+function dl(blob,name){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
+let toastT;
+function toast(msg,err){
+  const t=$("#toast"); t.textContent=msg;
+  t.style.borderColor=err?"var(--err)":"var(--ok)";
+  t.style.display="block";
+  clearTimeout(toastT); toastT=setTimeout(()=>t.style.display="none",4000);
+}
+renderRows();
+</script>
+</body>
+</html>
